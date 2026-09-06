@@ -867,3 +867,29 @@ a { color: inherit; }
 .btn-icon:hover { color: var(--text); border-color: var(--accent-dim); }
 .btn-icon-success:hover { color: var(--green); border-color: var(--green); }
 .btn-icon-danger:hover { color: var(--red); border-color: var(--red); }
+
+
+.token-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 18px;
+    background-color: rgba(245, 185, 66, 0.1);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius-m);
+    color: var(--gold);
+    font-size: 13px;
+    margin-bottom: 24px;
+}
+
+.token-banner a {
+    color: var(--gold);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.token-banner a:hover {
+    text-decoration: underline;
+}

@@ -18,12 +18,22 @@ else:
     TEMPLATE_DIR = "templates"
     STATIC_DIR = "static"
 
+# Kullanıcı verisi (config.json, game_images) exe paketlenmişse AppData'da,
+# geliştirme sırasında proje klasöründe tutulur.
+if getattr(sys, "frozen", False):
+    appdata = os.getenv("APPDATA")
+    DATA_DIR = os.path.join(appdata, "MyGameList") if appdata else APP_DIR
+else:
+    DATA_DIR = APP_DIR
+
+os.makedirs(DATA_DIR, exist_ok=True)
+
 load_dotenv(os.path.join(APP_DIR, ".env"))
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.secret_key = os.getenv("SECRET_KEY", "mygamelist-dev-secret")
 init_db()
-GAME_IMAGES_DIR = os.path.join(APP_DIR, "game_images")
+GAME_IMAGES_DIR = os.path.join(DATA_DIR, "game_images")
 os.makedirs(GAME_IMAGES_DIR, exist_ok=True)
 
 
@@ -79,7 +89,7 @@ def get_game_details_with_fallback(game_id):
     return fallback, True
 
 
-CONFIG_PATH = os.path.join(APP_DIR, "config.json")
+CONFIG_PATH = os.path.join(DATA_DIR, "config.json")
 
 
 def load_api_key():
@@ -123,8 +133,8 @@ RAWG_BASE_URL = "https://api.rawg.io/api"
 
 @app.context_processor
 def inject_translation():
-    """Tüm template'lerde t() fonksiyonunu ve aktif dili kullanılabilir yapar."""
-    return dict(t=t, current_lang=session.get("lang", "tr"))
+    """Tüm template'lerde t(), aktif dili ve API key durumunu kullanılabilir yapar."""
+    return dict(t=t, current_lang=session.get("lang", "tr"), api_key_missing=not bool(RAWG_API_KEY))
 
 
 def search_games(query):
@@ -260,13 +270,6 @@ def is_in_my_list(game_id):
     conn.close()
     return result is not None
 
-@app.before_request
-def require_api_key():
-    """API key ayarlanmamışsa, kurulum sayfası ve statik dosyalar dışında
-    her isteği kurulum sayfasına yönlendirir."""
-    if not RAWG_API_KEY:
-        if request.endpoint not in ("setup", "static"):
-            return redirect(url_for("setup"))
 
 
 

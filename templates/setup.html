@@ -6,7 +6,9 @@
     <div class="edit-card" style="max-width: 480px; margin: 40px auto;">
         <h1 style="font-family: var(--font-display); font-size: 22px; margin-bottom: 12px;">{{ t('setup_title') }}</h1>
         <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 16px;">{{ t('setup_text') }}</p>
-
+        {% if not api_key_missing %}
+            <p style="color: var(--green); font-size: 13px; margin-bottom: 16px;">✓ {{ t('setup_already_set') }}</p>
+        {% endif %}
         <a href="https://rawg.io/apidocs" target="_blank" class="chip" style="margin-bottom: 22px; text-decoration: none;">
             {{ t('setup_get_key') }}
         </a>

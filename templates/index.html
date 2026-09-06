@@ -4,6 +4,15 @@
 
 {% block content %}
 
+    {% if api_key_missing %}
+        <div class="token-banner">
+            <span>{{ t('banner_no_key') }}</span>
+            <a href="{{ url_for('setup') }}">{{ t('banner_add_key') }}</a>
+        </div>
+    {% endif %}
+
+    <span class="hero-eyebrow">{{ t('search_title') }}</span>
+
     <section class="hero">
         <div class="hero-decoration" aria-hidden="true">
             <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">

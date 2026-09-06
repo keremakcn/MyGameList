@@ -3,11 +3,14 @@ import os
 import sys
 
 if getattr(sys, "frozen", False):
-    APP_DIR = os.path.dirname(sys.executable)
+    appdata = os.getenv("APPDATA")
+    DATA_DIR = os.path.join(appdata, "MyGameList") if appdata else os.path.dirname(sys.executable)
 else:
-    APP_DIR = os.path.dirname(os.path.abspath(__file__))
+    DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DB_NAME = os.path.join(APP_DIR, "games.db")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+DB_NAME = os.path.join(DATA_DIR, "games.db")
 
 
 def get_connection():

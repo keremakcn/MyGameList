@@ -78,6 +78,10 @@ TRANSLATIONS = {
         "setup_error_empty": "Lütfen bir API key gir.",
         "setup_error_invalid": "Bu key çalışmadı. Kopyalarken bir hata olmuş olabilir, tekrar dene.",
         "detail_youtube": "YouTube'da Fragman Ara",
+        "banner_no_key": "⚠ RAWG API key ayarlı değil — arama ve yeni oyun ekleme çalışmayacak.",
+        "banner_add_key": "Key ekle →",
+        "nav_settings": "⚙ Ayarlar",
+        "setup_already_set": "Zaten bir API key ayarlı. Değiştirmek için yenisini gir.",
     },
     "en": {
         "quick_mark_played": "Mark as Played",
@@ -155,7 +159,11 @@ TRANSLATIONS = {
         "setup_error_empty": "Please enter an API key.",
         "setup_error_invalid": "That key didn't work. There may have been a copy-paste error — try again.",
         "offline_banner": "⚠ You're offline — showing cached data.",
-        "detail_youtube": "Search Trailer on YouTube",        
+        "detail_youtube": "Search Trailer on YouTube",
+        "banner_no_key": "⚠ No RAWG API key set — search and adding new games won't work.",
+        "banner_add_key": "Add your key →",
+        "nav_settings": "⚙ Settings",
+        "setup_already_set": "You already have an API key set. Enter a new one to replace it.",
     },
 }
 

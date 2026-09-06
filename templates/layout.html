@@ -27,6 +27,7 @@
         </a>
         <nav class="navbar-links">
             <a href="{{ url_for('index') }}">{{ t('nav_home') }}</a>
+            <a href="{{ url_for('setup') }}">{{ t('nav_settings') }}</a>
             <div class="lang-toggle">
                 <a href="{{ url_for('set_language', lang='tr') }}" class="lang-option {% if current_lang == 'tr' %}lang-active{% endif %}">TR</a>
                 <a href="{{ url_for('set_language', lang='en') }}" class="lang-option {% if current_lang == 'en' %}lang-active{% endif %}">EN</a>
