@@ -23,6 +23,7 @@ Currently built as a single-user app, but the database is designed so it can evo
 - 🌐 **Bilingual** — Turkish / English, switch instantly
 - 🎨 **Custom design** — dark theme, cartridge/HUD-inspired look
 - 🖥️ **Desktop app** — packaged as a standalone Windows app with its own window and icon, no browser required
+- ⚙️ **No hard lock-in** — the app works even without an API key set; search and adding new games are simply disabled until you add one from Settings
 - 🛡️ **Resilient error handling** — the app won't crash if the RAWG API fails, returns incomplete data, or the connection drops
 
 ---
@@ -37,8 +38,9 @@ If you just want to use the app without touching code:
 4. On first launch, you'll see a short setup screen asking for a free RAWG API key. Get one at [rawg.io/apidocs](https://rawg.io/apidocs) (sign up, copy your key, paste it in). You'll only need to do this once.
 5. That's it — the app opens in its own window from then on.
 
-> 💡 Everything the app needs (`config.json` with your API key, `games.db` with your library, and cached cover art) is stored **inside the extracted folder**, next to the exe. Move the whole folder anywhere — even to another PC — and your library moves with it.
+> 💡 Your data (API key, library, and cached cover art) is stored in `%APPDATA%\MyGameList`, completely independent of where the exe itself lives. You can move, rename, or even delete and redownload the exe — your library stays untouched. If you ever want to fully reset the app, just delete that folder.
 
+Don't have a RAWG API key yet? No problem — the app still opens normally. You'll see a banner at the top prompting you to add one whenever you're ready, via the ⚙ **Settings** link in the navigation bar.
 ---
 
 ## 🛠️ Running from Source (Developers)
