@@ -15,6 +15,22 @@ A personal game library for Windows, with fast discovery, local storage, and a d
 
 The app opens without an API key; online discovery requires one. Your existing library remains available offline, including saved game details and covers that were downloaded successfully.
 
+## Screenshots
+
+### Personal library
+Track your games, ratings, favorites, and notes in one place.
+
+![MyGameList personal library](screenshots/homepage.png)
+
+![MyGameList personal library](screenshots/homepage2.png)
+
+### Search and discovery
+Find games, developers, and publishers with live search suggestions.
+
+![MyGameList search and discovery](screenshots/search.png)
+
+![MyGameList search and discovery](screenshots/searchfromdevelopers.png)
+
 ## What you can do
 
 | Discover games | Manage your library |
