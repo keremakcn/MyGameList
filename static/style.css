@@ -928,17 +928,31 @@ a { color: inherit; }
     font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline;
 }
 .note-toggle:hover { color: var(--text); }
+.game-card-note.note-preview-expanded {
+    display: -webkit-box; -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5; overflow: hidden;
+}
+.note-read-full {
+    display: block; margin: 0 14px 8px; color: var(--accent);
+    font-size: 12px; text-decoration: underline; text-underline-offset: 3px;
+}
+.personal-note-section { margin: 0 0 24px; scroll-margin-top: 24px; }
+.personal-note-text {
+    white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7;
+    color: var(--text-muted); padding: 16px; border: 1px solid var(--border);
+    border-radius: var(--radius-s); background: var(--surface);
+}
 #library-grid { align-items: start; }
 #library-grid .game-card-body {
     padding-bottom: 6px;
     gap: 3px;
-    min-height: 105px;
+    min-height: 0;
 }
 
 #library-grid .game-card-body h3 {
-    height: auto; line-height: 1.3;
-    display: -webkit-box; -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2; overflow: hidden;
+    height: 1.3em; line-height: 1.3;
+    display: block; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 #library-grid .game-card-note { min-height: 3em; }
 .library-card-meta {
@@ -998,14 +1012,10 @@ a { color: inherit; }
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
-#library-grid .game-card-body {
+#library-grid .game-card {
     min-height: 0;
 }
 
-#library-grid .game-card {
-    min-height: 360px;
-}
-
 #library-grid .game-card-actions {
-    margin-top: auto;
+    margin-top: 0;
 }

@@ -13,10 +13,14 @@
 
     document.querySelectorAll('.note-toggle').forEach(button => {
         const note = document.getElementById(button.getAttribute('aria-controls'));
+        const fullLink = document.getElementById(`${note.id}-full`);
         note.classList.add('note-collapsed');
         const measure = () => {
-            if (!note.getClientRects().length || button.getAttribute('aria-expanded') === 'true') return;
-            button.hidden = note.scrollHeight <= note.clientHeight + 1;
+            if (!note.getClientRects().length) return;
+            const expanded = button.getAttribute('aria-expanded') === 'true';
+            const overflowing = note.scrollHeight > note.clientHeight + 1;
+            button.hidden = !expanded && !overflowing;
+            if (fullLink) fullLink.hidden = !expanded || !overflowing;
             button.closest('.library-card-meta').classList.toggle('has-note-toggle', !button.hidden);
         };
         button.addEventListener('click', () => {
@@ -24,6 +28,7 @@
             button.setAttribute('aria-expanded', String(expanded));
             button.textContent = expanded ? button.dataset.less : button.dataset.more;
             note.classList.toggle('note-collapsed', !expanded);
+            note.classList.toggle('note-preview-expanded', expanded);
             measure();
         });
         if (window.ResizeObserver) new ResizeObserver(measure).observe(note);

@@ -112,12 +112,15 @@
                         <div class="game-card-body">
                             <h3 title="{{ game.name }}">{{ game.name }}</h3>
                             {% if game.note and game.note.strip() %}
-                                <p class="game-card-note" id="note-{{ game.game_id }}">“{{ game.note }}”</p>
+                                <p class="game-card-note note-collapsed" id="note-{{ game.game_id }}">“{{ game.note }}”</p>
                             {% else %}
                                 <div class="game-card-note" aria-hidden="true"></div>
                             {% endif %}
                         </div>
                     </a>
+                    {% if game.note and game.note.strip() %}
+                        <a id="note-{{ game.game_id }}-full" class="note-read-full" href="{{ url_for('game_detail', game_id=game.game_id, _anchor='personal-note') }}" hidden>{{ t('note_read_full') }}</a>
+                    {% endif %}
                     <div class="game-card-meta library-card-meta">
                         {% if game.note and game.note.strip() %}
                             <button type="button" class="note-toggle" aria-expanded="false" aria-controls="note-{{ game.game_id }}"

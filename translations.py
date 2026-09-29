@@ -2,6 +2,7 @@ from flask import session
 
 TRANSLATIONS = {
     "tr": {
+        "note_read_full": "Tamamını oku →",
         "deleted_notice": "Oyun listenden silindi.",
         "undo_action": "Geri al",
         "undo_success": "Oyun, notları ve puanıyla geri getirildi.",
@@ -119,6 +120,7 @@ TRANSLATIONS = {
 
     },
     "en": {
+        "note_read_full": "Read full note →",
         "deleted_notice": "Game removed from your library.",
         "undo_action": "Undo",
         "undo_success": "Game restored with its notes and rating.",

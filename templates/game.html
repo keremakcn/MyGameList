@@ -89,6 +89,12 @@
                     </div>
 
                     {% if in_list %}
+                        {% if my_game.note and my_game.note.strip() %}
+                            <section id="personal-note" class="personal-note-section" aria-labelledby="personal-note-heading">
+                                <h2 id="personal-note-heading" class="section-heading">{{ t('edit_note') }}</h2>
+                                <p class="personal-note-text">{{ my_game.note }}</p>
+                            </section>
+                        {% endif %}
                         <h2 class="section-heading" style="margin-top: 0;">{{ t('detail_library_heading') }}</h2>
 
                         <form method="post" action="{{ url_for('edit_game', game_id=game.id) }}" class="edit-form" style="max-width: 420px;">
