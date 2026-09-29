@@ -26,10 +26,7 @@
         <span class="hero-eyebrow">{{ t('hero_eyebrow') }}</span>
         <h1>MyGameList</h1>
 
-        <form class="search-box" action="{{ url_for('search') }}" method="get">
-            <input type="text" name="q" placeholder="{{ t('search_placeholder') }}">
-            <button type="submit">{{ t('search_button') }}</button>
-        </form>
+        {% include '_discovery_search.html' %}
     </section>
 
     <div class="stats-bar">
@@ -75,15 +72,21 @@
         <a href="{{ url_for('index', filter=current_filter, sort='rating_asc') }}" class="pill {% if current_sort == 'rating_asc' %}pill-active{% endif %}">{{ t('sort_rating_asc') }}</a>
         <a href="{{ url_for('index', filter=current_filter, sort='recent') }}" class="pill {% if current_sort == 'recent' %}pill-active{% endif %}">{{ t('sort_recent') }}</a>
         <a href="{{ url_for('index', filter=current_filter, sort='oldest') }}" class="pill {% if current_sort == 'oldest' %}pill-active{% endif %}">{{ t('sort_oldest') }}</a>
+        <a href="{{ url_for('index', filter=current_filter, sort='played_date_asc') }}" class="pill {% if current_sort == 'played_date_asc' %}pill-active{% endif %}"> {{ t('sort_played_date_asc') }} </a>
+        <a href="{{ url_for('index', filter=current_filter, sort='played_date_desc') }}" class="pill {% if current_sort == 'played_date_desc' %}pill-active{% endif %}"> {{ t('sort_played_date_desc') }} </a>
     </div>
 
     <h2 class="section-heading">{{ t('section_my_games') }}</h2>
 
     {% if games %}
-        <div class="game-grid">
+        <div class="search-box library-search">
+            <input id="library-search" type="search" placeholder="{{ t('library_search') }}" aria-label="{{ t('library_search') }}" aria-controls="library-grid" autocomplete="off">
+        </div>
+        <p id="library-no-results" class="empty-state" role="status" aria-live="polite" hidden>{{ t('library_no_results') }}</p>
+        <div class="game-grid" id="library-grid">
             {% for game in games %}
                 {% set status_colors = {'Want to Play': 'var(--status-want)', 'Playing': 'var(--status-playing)', 'Played': 'var(--status-played)', 'Dropped': 'var(--status-dropped)'} %}
-                <div class="game-card" style="--status-color: {{ status_colors[game.status] }};">
+                <div class="game-card" data-game-name="{{ game.name }}" style="--status-color: {{ status_colors[game.status] }};">
                     <a href="{{ url_for('game_detail', game_id=game.game_id) }}" class="game-card-link">
                         <div class="game-card-media">
                             {% if game.local_image_path %}
@@ -94,9 +97,11 @@
                                 <div class="no-image">{{ t('no_image') }}</div>
                             {% endif %}
 
-                            {% if game.metacritic %}
+                            {% if game.metacritic is not none %}
                                 {% set mc_class = 'mc-high' if game.metacritic >= 75 else ('mc-mid' if game.metacritic >= 50 else 'mc-low') %}
-                                <span class="badge-mc {{ mc_class }}">{{ game.metacritic }}</span>
+                                <span class="badge-mc {{ mc_class }}" title="Metacritic: {{ game.metacritic }}/100">
+                                    {{ game.metacritic }}
+                                </span>
                             {% endif %}
 
                             {% if game.favorite %}
@@ -105,14 +110,22 @@
                         </div>
 
                         <div class="game-card-body">
-                            <h3>{{ game.name }}</h3>
-                            <div class="game-card-meta">
-                                <span class="status-tag">{{ t('status_' ~ game.status) }}</span>
-                                <span>{% if game.my_rating %}{{ game.my_rating }}/10{% else %}—{% endif %}</span>
-                            </div>
+                            <h3 title="{{ game.name }}">{{ game.name }}</h3>
+                            {% if game.note and game.note.strip() %}
+                                <p class="game-card-note" id="note-{{ game.game_id }}">“{{ game.note }}”</p>
+                            {% else %}
+                                <div class="game-card-note" aria-hidden="true"></div>
+                            {% endif %}
                         </div>
                     </a>
-
+                    <div class="game-card-meta library-card-meta">
+                        {% if game.note and game.note.strip() %}
+                            <button type="button" class="note-toggle" aria-expanded="false" aria-controls="note-{{ game.game_id }}"
+                                    data-more="{{ t('note_more') }}" data-less="{{ t('note_less') }}" hidden>{{ t('note_more') }}</button>
+                        {% endif %}
+                        <span class="status-tag">{{ t('status_' ~ game.status) }}</span>
+                        <span class="personal-rating">{% if game.my_rating is not none %}{{ game.my_rating }}/10{% else %}—{% endif %}</span>
+                    </div>
                     <div class="game-card-actions" style="padding: 0 14px 14px;">
                         <a href="{{ url_for('edit_game', game_id=game.game_id) }}" class="btn-mini">{{ t('card_view') }}</a>
 
@@ -137,4 +150,5 @@
         <p class="empty-state">{{ t('empty_library') }}</p>
     {% endif %}
 
+<script src="{{ url_for('static', filename='library-search.js') }}" defer></script>
 {% endblock %}

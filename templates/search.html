@@ -6,13 +6,32 @@
 
     <span class="hero-eyebrow">{{ t('search_title') }}</span>
     <h1 style="font-family: var(--font-display); font-size: 28px; margin-bottom: 20px;">
-        {% if query %}"{{ query }}" {{ t('search_results_for') }}{% else %}{{ t('search_title') }}{% endif %}
+        {% if company_id %}{{ company_name }} · {{ t('search_' ~ search_type) }}{% elif query %}"{{ query }}" {{ t('search_results_for') }}{% else %}{{ t('search_title') }}{% endif %}
     </h1>
 
-    {% if results %}
+    {% include '_discovery_search.html' %}
+    {% if company_id %}
+        <a class="back-link" href="{{ url_for('search', type=search_type, q=query or company_name) }}">{{ t('back_companies') }}</a>
+    {% endif %}
+    {% if search_failed %}
+        <p class="empty-state" role="alert">{{ t('search_error') }}</p>
+    {% elif company_results and results %}
+        <div class="game-grid">
+            {% for company in results %}
+                <a class="game-card" href="{{ url_for('search', type=search_type, q=query, company=company.id, company_name=company.name) }}">
+                    <div class="game-card-media">
+                        {% if company.image_background %}<img src="{{ company.image_background }}" alt="{{ company.name }}" loading="lazy">{% else %}<div class="no-image">{{ t('no_image') }}</div>{% endif %}
+                    </div>
+                    <div class="game-card-body"><h3>{{ company.name }}</h3><span class="game-card-meta">{{ t('search_' ~ search_type) }} · {{ company.games_count|default(0) }} {{ t('games_count_label') }}</span></div>
+                    <div class="search-card-hint">{{ t('company_games') }}</div>
+                </a>
+            {% endfor %}
+        </div>
+    {% elif results %}
         <div class="game-grid">
             {% for game in results %}
-                <a href="{{ url_for('game_detail', game_id=game.id, q=query) }}" class="game-card">
+                <div class="game-card">
+                <a href="{{ url_for('game_detail', game_id=game.id, q=query, type=search_type, company=company_id, company_name=company_name, page=page) }}" class="game-card-link">
                     <div class="game-card-media">
                         {% if game.background_image %}
                             <img src="{{ game.background_image }}" alt="{{ game.name }}">
@@ -43,12 +62,31 @@
                         <div class="search-card-hint">{{ t('search_hint') }}</div>
                     {% endif %}
                 </a>
+                <form method="post" action="{{ url_for('quick_add_game', game_id=game.id) }}" class="quick-add-form"
+                      data-error="{{ t('quick_add_error') }}" data-adding="{{ t('quick_adding') }}" data-owned="{{ t('search_hint_owned') }}">
+                    <input type="hidden" name="q" value="{{ query }}">
+                    <input type="hidden" name="type" value="{{ search_type }}">
+                    <input type="hidden" name="company" value="{{ company_id or '' }}">
+                    <input type="hidden" name="company_name" value="{{ company_name }}">
+                    <input type="hidden" name="page" value="{{ page }}">
+                    <button type="submit" class="btn-mini" {% if game.id in owned_ids %}disabled{% endif %}>
+                        {% if game.id in owned_ids %}{{ t('quick_added') }}{% else %}{{ t('quick_add') }}{% endif %}
+                    </button>
+                    <span class="quick-add-feedback" role="status"></span>
+                </form>
+                </div>
             {% endfor %}
         </div>
-    {% elif query %}
+    {% elif query or company_id %}
         <p class="empty-state">"{{ query }}" {{ t('search_no_results') }}</p>
     {% else %}
         <p class="empty-state">{{ t('search_prompt') }}</p>
     {% endif %}
 
+{% if not search_failed and (page > 1 or has_next) %}
+    <nav class="filter-bar search-pagination" aria-label="{{ t('pagination') }}">
+        {% if page > 1 %}<a class="pill" href="{{ url_for('search', q=query, type=search_type, company=company_id, company_name=company_name, page=page-1) }}">{{ t('previous_page') }}</a>{% endif %}
+        {% if has_next %}<a class="pill" href="{{ url_for('search', q=query, type=search_type, company=company_id, company_name=company_name, page=page+1) }}">{{ t('next_page') }}</a>{% endif %}
+    </nav>
+{% endif %}
 {% endblock %}

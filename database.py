@@ -1,6 +1,9 @@
 import sqlite3
 import os
 import sys
+import json
+import secrets
+import time
 
 if getattr(sys, "frozen", False):
     appdata = os.getenv("APPDATA")
@@ -25,6 +28,14 @@ def init_db():
     """games.db dosyasını ve tabloları oluşturur (yoksa)."""
     conn = get_connection()
     cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS deleted_game_entries (
+            token TEXT PRIMARY KEY,
+            snapshot TEXT NOT NULL,
+            expires_at REAL NOT NULL
+        )
+    """)
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS games (
@@ -78,6 +89,7 @@ def get_my_games(filter_by="all", sort_by="recent"):
             my_games.id AS my_game_id,
             my_games.status,
             my_games.my_rating,
+            my_games.note,
             my_games.favorite
         FROM my_games
         JOIN games ON my_games.game_id = games.id
@@ -99,6 +111,8 @@ def get_my_games(filter_by="all", sort_by="recent"):
         params.append(status_map[filter_by])
 
     sort_map = {
+        "played_date_asc": "NULLIF(my_games.played_date, '') IS NULL, my_games.played_date ASC, my_games.id DESC",
+        "played_date_desc": "NULLIF(my_games.played_date, '') IS NULL, my_games.played_date DESC, my_games.id DESC",
         "name_asc": "games.name ASC",
         "name_desc": "games.name DESC",
         "metacritic_desc": "games.metacritic DESC",
@@ -107,6 +121,7 @@ def get_my_games(filter_by="all", sort_by="recent"):
         "rating_asc": "my_games.my_rating ASC",
         "recent": "my_games.id DESC",
         "oldest": "my_games.id ASC"
+
     }
 
     order_clause = sort_map.get(sort_by, "my_games.id DESC")
@@ -147,6 +162,46 @@ def get_my_games_stats():
         "playing": playing,
         "avg_rating": round(avg_rating, 1) if avg_rating else None
     }
+
+
+def delete_with_undo(game_id):
+    """Keep the entire library entry for five minutes, including its original ID."""
+    conn = get_connection()
+    try:
+        with conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("DELETE FROM deleted_game_entries WHERE expires_at < ?", (time.time(),))
+            entry = conn.execute("SELECT * FROM my_games WHERE game_id = ?", (game_id,)).fetchone()
+            if entry is None:
+                return None
+            token = secrets.token_urlsafe(24)
+            conn.execute("INSERT INTO deleted_game_entries VALUES (?, ?, ?)",
+                         (token, json.dumps(dict(entry)), time.time() + 300))
+            conn.execute("DELETE FROM my_games WHERE game_id = ?", (game_id,))
+            return token
+    finally:
+        conn.close()
+
+
+def undo_delete(token):
+    """Restore without overwriting a game that has already been re-added."""
+    conn = get_connection()
+    try:
+        with conn:
+            conn.execute("BEGIN IMMEDIATE")
+            saved = conn.execute("SELECT * FROM deleted_game_entries WHERE token = ?", (token,)).fetchone()
+            if saved is None or saved["expires_at"] < time.time():
+                return False
+            entry = json.loads(saved["snapshot"])
+            columns = ("id", "game_id", "status", "my_rating", "note", "favorite", "played_date")
+            cursor = conn.execute(
+                "INSERT OR IGNORE INTO my_games (id, game_id, status, my_rating, note, favorite, played_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                tuple(entry[column] for column in columns),
+            )
+            conn.execute("DELETE FROM deleted_game_entries WHERE token = ?", (token,))
+            return cursor.rowcount == 1
+    finally:
+        conn.close()
 
 
 def delete_from_my_list(game_id):

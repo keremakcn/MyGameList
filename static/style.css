@@ -893,3 +893,119 @@ a { color: inherit; }
 .token-banner a:hover {
     text-decoration: underline;
 }
+
+.game-card-note {
+    margin: 2px 0 4px;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+/* Library filtering and discovery search */
+[hidden] { display: none !important; }
+.discovery-search { max-width: 700px; flex-wrap: wrap; margin-bottom: 20px; }
+.discovery-search input { min-width: 160px; }
+.discovery-search select {
+    padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-s);
+    background: var(--surface); color: var(--text); font: inherit;
+}
+.discovery-search select:focus-visible { outline: 2px solid var(--accent); }
+.library-search { margin-bottom: 20px; }
+.library-search input { min-width: 0; }
+.search-pagination { margin-top: 24px; }
+.company-link { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.company-link:hover { color: var(--accent); }
+
+.game-card-note.note-collapsed {
+    display: -webkit-box; -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2; overflow: hidden;
+}
+.note-toggle {
+    align-self: flex-start; margin: 0 14px 12px; padding: 0;
+    border: 0; background: none; color: var(--text-muted);
+    font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline;
+}
+.note-toggle:hover { color: var(--text); }
+#library-grid { align-items: start; }
+#library-grid .game-card-body {
+    padding-bottom: 6px;
+    gap: 3px;
+    min-height: 105px;
+}
+
+#library-grid .game-card-body h3 {
+    height: auto; line-height: 1.3;
+    display: -webkit-box; -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2; overflow: hidden;
+}
+#library-grid .game-card-note { min-height: 3em; }
+.library-card-meta {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 18px 18px; line-height: 18px;
+    gap: 4px 12px; padding: 0 14px 10px; align-items: center;
+}
+.library-card-meta .note-toggle {
+    grid-column: 1; grid-row: 1; margin: 0; justify-self: start; text-align: left;
+}
+.library-card-meta .status-tag { grid-column: 1; grid-row: 2; }
+.library-card-meta.has-note-toggle .status-tag { grid-row: 2; }
+.library-card-meta .personal-rating { grid-column: 2; grid-row: 2; }
+.library-card-meta.has-note-toggle .personal-rating { grid-row: 1; }
+.quick-add-form { padding: 0 14px 14px; }
+.quick-add-form button { width: 100%; cursor: pointer; }
+.quick-add-form button:disabled { opacity: .65; cursor: default; }
+.quick-add-feedback { display: block; color: var(--red); font-size: 12px; margin-top: 6px; }
+.quick-add-feedback:empty { display: none; }
+.toast-stack {
+    position: fixed; right: 20px; bottom: 20px; z-index: 100;
+    display: flex; flex-direction: column; gap: 10px; max-width: min(480px, calc(100vw - 40px));
+}
+.action-toast {
+    display: flex; align-items: center; gap: 14px; padding: 16px;
+    border: 1px solid var(--border); border-radius: var(--radius-s);
+    background: var(--surface); color: var(--text); font-size: 13px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.4);
+}
+.action-toast form { flex-shrink: 0; }
+.toast-dismiss { background: none; border: 0; color: var(--text-muted); font-size: 22px; cursor: pointer; }
+
+/* Suggestions stay attached to the discovery input on narrow screens. */
+.suggestion-field { position: relative; flex: 1; min-width: 160px; }
+.discovery-search .suggestion-field input { width: 100%; min-width: 0; }
+.suggestion-popup {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+    border: 1px solid var(--border); border-radius: var(--radius-s);
+    background: var(--surface); box-shadow: 0 12px 32px rgba(0, 0, 0, .4);
+    max-height: 340px; overflow-y: auto;
+}
+.suggestion-list { list-style: none; padding: 4px; margin: 0; }
+.suggestion-list:empty { display: none; }
+.suggestion-list li {
+    display: flex; align-items: center; gap: 10px; padding: 9px;
+    min-height: 52px; border-radius: var(--radius-s); cursor: pointer;
+    color: var(--text); font-size: 13px;
+}
+.suggestion-list li:hover, .suggestion-list li[aria-selected="true"] {
+    background: var(--bg); outline: 1px solid var(--accent); outline-offset: -1px;
+}
+.suggestion-list img { width: 48px; height: 36px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.suggestion-list span { overflow-wrap: anywhere; }
+.suggestion-message { margin: 0; padding: 14px; color: var(--text-muted); font-size: 13px; }
+.visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+#library-grid .game-card-body {
+    min-height: 0;
+}
+
+#library-grid .game-card {
+    min-height: 360px;
+}
+
+#library-grid .game-card-actions {
+    margin-top: auto;
+}

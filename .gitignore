@@ -1,9 +1,20 @@
+# Kişisel ayarlar ve anahtarlar
 .env
-venv/
-__pycache__/
-games.db
+.env.*
+!.env.example
 config.json
+
+# Yerel kütüphane ve görseller
+games.db
+games.db-*
 game_images/
+
+# Python ortamı ve önbelleği
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Derleme çıktıları
 build/
 dist/
-*.spec

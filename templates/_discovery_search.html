@@ -1,0 +1,20 @@
+<form class="search-box discovery-search" action="{{ url_for('search') }}" method="get"
+      data-suggestions-url="{{ url_for('search_suggestions') }}"
+      data-loading="{{ t('suggestions_loading') }}" data-empty="{{ t('suggestions_empty') }}"
+      data-error="{{ t('suggestions_error') }}" data-count="{{ t('suggestions_count') }}">
+    <select name="type" aria-label="{{ t('search_type') }}">
+        {% for kind in ['games', 'developers', 'publishers'] %}
+            <option value="{{ kind }}" {% if (search_type|default('games')) == kind %}selected{% endif %}>{{ t('search_' ~ kind) }}</option>
+        {% endfor %}
+    </select>
+    <div class="suggestion-field">
+        <input type="search" name="q" value="{{ query|default('') }}" placeholder="{{ t('discovery_placeholder') }}" aria-label="{{ t('discovery_placeholder') }}" required
+               role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" spellcheck="false">
+        <div class="suggestion-popup" hidden>
+            <ul class="suggestion-list" role="listbox" aria-label="{{ t('suggestions_label') }}"></ul>
+            <p class="suggestion-message" hidden></p>
+        </div>
+        <span class="visually-hidden suggestion-status" role="status" aria-live="polite"></span>
+    </div>
+    <button type="submit">{{ t('search_button') }}</button>
+</form>

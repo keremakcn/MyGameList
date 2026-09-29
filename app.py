@@ -1,8 +1,13 @@
 import os
 import sys
 import json
+import re
+import unicodedata
+from difflib import SequenceMatcher
+from concurrent.futures import ThreadPoolExecutor
 import requests
-from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, jsonify, flash
+from database import delete_with_undo, undo_delete
 from dotenv import load_dotenv
 from database import get_connection, get_my_games, get_my_games_stats, delete_from_my_list, get_my_game_by_id, update_my_game, get_owned_game_ids, update_status_only, init_db, get_local_game_data
 from translations import t
@@ -144,8 +149,6 @@ def search_games(query):
     params = {
         "key": RAWG_API_KEY,
         "search": query,
-        "search_precise": "true",
-        "ordering": "-added",
         "exclude_additions": "true",
         "page_size": 10
     }
@@ -159,7 +162,7 @@ def search_games(query):
         return []
 
     data = response.json()
-    return data.get("results", [])
+    return rank_game_results(data.get("results", []), query)
 
 
 def clean_description(text):
@@ -306,9 +309,12 @@ def set_language(lang):
 def index():
     """Ana sayfa: dashboard olarak çalışır, stats + filtrelenmiş/sıralanmış oyun listesini gösterir."""
     if request.method == "POST":
-        game_id_to_delete = request.form.get("delete_game_id")
+        game_id_to_delete = request.form.get("delete_game_id", type=int)
         if game_id_to_delete:
-            delete_from_my_list(int(game_id_to_delete))
+            token = delete_with_undo(game_id_to_delete)
+            if token:
+                flash({"token": token}, "undo")
+        return redirect(url_for("index", filter=request.args.get("filter", "all"), sort=request.args.get("sort", "recent")))
 
     filter_by = request.args.get("filter", "all")
     sort_by = request.args.get("sort", "recent")
@@ -325,20 +331,201 @@ def index():
     )
 
 
+@app.route("/library/undo", methods=["POST"])
+def restore_library_game():
+    restored = undo_delete(request.form.get("token", ""))
+    flash(t("undo_success") if restored else t("undo_unavailable"), "notice")
+    return redirect(url_for("index", filter=request.form.get("filter", "all"), sort=request.form.get("sort", "recent")))
+
+
+@app.route("/library/add/<int:game_id>", methods=["POST"])
+def quick_add_game(game_id):
+    success = is_in_my_list(game_id)
+    if not success:
+        game, is_offline = get_game_details_with_fallback(game_id)
+        if game is not None:
+            if not is_offline:
+                local_filename = download_game_image(game_id, game.get("background_image"))
+                save_game_to_db(game, local_image_filename=local_filename)
+            add_to_my_list(game_id)
+            success = True
+    if request.accept_mimetypes.best == "application/json":
+        return jsonify(ok=success, message=t("quick_added") if success else t("quick_add_error")), 200 if success else 502
+    flash(t("quick_added") if success else t("quick_add_error"), "notice")
+    return redirect(url_for("search", q=request.form.get("q", ""), type=request.form.get("type", "games"),
+                            company=request.form.get("company", ""), company_name=request.form.get("company_name", ""), page=request.form.get("page", 1)))
+
+
+def rawg_search_page(resource, params):
+    """Fetch a page without exposing the API key or upstream pagination URLs."""
+    if not RAWG_API_KEY:
+        return [], False, True
+    try:
+        response = requests.get(
+            f"{RAWG_BASE_URL}/{resource}",
+            params={**params, "key": RAWG_API_KEY}, timeout=8,
+        )
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict) or not isinstance(data.get("results"), list):
+            return [], False, True
+        results = [item for item in data["results"]
+                   if isinstance(item, dict) and item.get("id") and item.get("name")]
+        return results, bool(data.get("next")), False
+    except (requests.exceptions.RequestException, ValueError):
+        return [], False, True
+
+
+ROMAN_NUMBERS = {
+    "i": "1", "ii": "2", "iii": "3", "iv": "4", "v": "5",
+    "vi": "6", "vii": "7", "viii": "8", "ix": "9", "x": "10",
+}
+
+
+def expand_game_alias(query):
+    """Only expand a standalone GTA token; leave the text in the UI unchanged."""
+    return re.sub(r"\bgta\b", "Grand Theft Auto", query, flags=re.IGNORECASE)
+
+
+def game_query_variants(query):
+    """Use the same pair of API searches for numeric and Roman input."""
+    expanded = expand_game_alias(query)
+    numeric = re.sub(r"\b[^\W_]+\b", lambda match: ROMAN_NUMBERS.get(match[0].casefold(), match[0]), expanded)
+    to_roman = {number: roman.upper() for roman, number in ROMAN_NUMBERS.items()}
+    roman = re.sub(r"\b[0-9]+\b", lambda match: to_roman.get(match[0], match[0]), numeric)
+    return list(dict.fromkeys([numeric, roman]))
+
+
+def search_words(text):
+    """Ignore punctuation, case and accents when comparing game names."""
+    normalized = unicodedata.normalize("NFKD", text.casefold()).replace("ı", "i")
+    normalized = "".join(c for c in normalized if not unicodedata.combining(c))
+    return [ROMAN_NUMBERS.get(word, word) for word in re.findall(r"[^\W_]+", normalized)]
+
+
+def rank_game_results(results, query):
+    """Match every query word first, then prefer popular games in that group."""
+    words = search_words(expand_game_alias(query))
+    if not words:
+        return results
+    phrase = " ".join(words)
+
+    def relevance(game):
+        title_words = search_words(game["name"])
+        title = " ".join(title_words)
+        try:
+            popularity = max(0, int(game.get("added") or 0))
+        except (TypeError, ValueError, OverflowError):
+            popularity = 0
+        # Exact words keep "Witchery" below "The Witcher", even if popular.
+        if all(word in title_words for word in words):
+            return 0, 0, -popularity, title != phrase
+        # Prefixes still support suggestions while the final word is being typed.
+        matches = sum(any(token == word if word.isdigit() else token.startswith(word)
+                          for token in title_words) for word in words)
+        if matches == len(words):
+            return 1, 0, -popularity, title != phrase
+        fuzzy_matches = sum(any(
+            (token == word if word.isdigit() else token.startswith(word) or
+             (len(word) >= 4 and SequenceMatcher(None, word, token).ratio() >= 0.75))
+            for token in title_words
+        ) for word in words)
+        if fuzzy_matches == len(words):
+            return 2, 0, -popularity, title != phrase
+        return 3, -matches, -popularity, title != phrase
+
+    # Stable sorting preserves RAWG relevance within equally ranked matches.
+    return sorted(results, key=relevance)
+
+
+def search_game_page(query, page=1):
+    """Merge numeric/Roman searches, deduplicate and apply the existing ranking."""
+    variants = game_query_variants(query)
+
+    def fetch_variant(variant):
+        return rawg_search_page("games", {
+            "search": variant, "page": page, "page_size": 40,
+            "exclude_additions": "true",
+        })
+
+    if len(variants) == 1:
+        pages = [fetch_variant(variants[0])]
+    else:
+        # Independent requests run together, rather than adding their wait times.
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            pages = list(executor.map(fetch_variant, variants))
+    unique = {}
+    for results, _, failed in pages:
+        if not failed:
+            for game in results:
+                unique.setdefault(game["id"], game)
+    has_next = any(next_page for _, next_page, failed in pages if not failed)
+    failed = all(error for _, _, error in pages)
+    return rank_game_results(list(unique.values()), query), has_next, failed
+
+
+@app.route("/search/suggestions")
+def search_suggestions():
+    """Return a small suggestion list; the RAWG key stays on the server."""
+    query = request.args.get("q", "").strip()[:200]
+    mode = request.args.get("type", "games")
+    if mode not in ("games", "developers", "publishers"):
+        mode = "games"
+    if len(query) < 3:
+        return jsonify(results=[])
+    params = {"search": query, "page_size": 5}
+    if mode == "games":
+        results, _, failed = search_game_page(query)
+    else:
+        results, _, failed = rawg_search_page(mode, params)
+    if failed:
+        return jsonify(results=[], error=True), 503
+    suggestions = []
+    for item in results[:5]:
+        target = (url_for("game_detail", game_id=item["id"], q=query)
+                  if mode == "games" else
+                  url_for("search", type=mode, q=query, company=item["id"], company_name=item["name"]))
+        image = item.get("background_image" if mode == "games" else "image_background")
+        if not isinstance(image, str) or not image.startswith("https://"):
+            image = None
+        suggestions.append({"name": item["name"], "image": image, "url": target})
+    return jsonify(results=suggestions)
+
+
 @app.route("/search")
 def search():
-    """Kullanıcının girdiği sorguyla RAWG'da arama yapar, sonuçları ve
-    zaten listede olan oyunları işaretleyerek gösterir."""
     query = request.args.get("q", "").strip()
-
-    if not query:
-        return render_template("search.html", query=query, results=[], owned_ids=set())
-
-    results = search_games(query)
-    result_ids = [g["id"] for g in results]
-    owned_ids = get_owned_game_ids(result_ids)
-
-    return render_template("search.html", query=query, results=results, owned_ids=owned_ids)
+    mode = request.args.get("type", "games")
+    if mode not in ("games", "developers", "publishers"):
+        mode = "games"
+    page = max(1, request.args.get("page", 1, type=int) or 1)
+    company_id = request.args.get("company", type=int)
+    company_name = request.args.get("company_name", "").strip()
+    if mode == "games" or not company_id or company_id < 1:
+        company_id = None
+        company_name = ""
+    results, has_next, failed = [], False, False
+    if query or company_id:
+        params = {"page": page, "page_size": 20}
+        if company_id:
+            resource = "games"
+            params.update({mode: company_id, "ordering": "-added", "exclude_additions": "true"})
+        elif mode == "games":
+            resource = "games"
+        else:
+            resource = mode
+            params["search"] = query
+        if mode == "games" and not company_id:
+            results, has_next, failed = search_game_page(query, page)
+        else:
+            results, has_next, failed = rawg_search_page(resource, params)
+    company_results = mode != "games" and company_id is None
+    owned_ids = set() if company_results else get_owned_game_ids([g["id"] for g in results])
+    return render_template(
+        "search.html", query=query, results=results, owned_ids=owned_ids,
+        search_type=mode, company_results=company_results, company_id=company_id,
+        company_name=company_name, page=page, has_next=has_next, search_failed=failed,
+    )
 
 
 @app.route("/game/<int:game_id>", methods=["GET", "POST"])
@@ -358,7 +545,7 @@ def game_detail(game_id):
 
     in_list = is_in_my_list(game_id)
     my_game = get_my_game_by_id(game_id) if in_list else None
-    search_query = request.args.get("q")
+    search_query = request.args.get("q") or request.args.get("company_name")
 
     return render_template(
         "game.html", game=game, in_list=in_list, my_game=my_game,
@@ -385,8 +572,7 @@ def edit_game(game_id):
 
         update_my_game(game_id, status, my_rating, note, favorite, played_date)
 
-        next_url = request.form.get("next")
-        return redirect(next_url or url_for("index"))
+        return redirect(url_for("index"))
 
     return render_template("edit.html", game=my_game)
 
