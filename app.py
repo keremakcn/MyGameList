@@ -1,42 +1,48 @@
 import os
-import sys
-import json
 import re
 import unicodedata
 from difflib import SequenceMatcher
 from concurrent.futures import ThreadPoolExecutor
-import requests
-from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, jsonify, flash
+import secrets
+import math
+from pathlib import Path
+from urllib.request import Request, urlopen
+from urllib.error import URLError
+from urllib.parse import urlsplit
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, jsonify, flash, abort
 from database import delete_with_undo, undo_delete
-from dotenv import load_dotenv
+from paths import ASSET_DIR, DATA_DIR
+from game_client import GameClient, GameDiscoveryError
 from database import get_connection, get_my_games, get_my_games_stats, delete_from_my_list, get_my_game_by_id, update_my_game, get_owned_game_ids, update_status_only, init_db, get_local_game_data
 from translations import t
 
-# Exe olarak paketlendiğinde (PyInstaller) exe'nin bulunduğu klasörü,
-# normal python ile çalışırken bu dosyanın bulunduğu klasörü kullan.
-if getattr(sys, "frozen", False):
-    APP_DIR = os.path.dirname(sys.executable)
-    TEMPLATE_DIR = os.path.join(sys._MEIPASS, "templates")
-    STATIC_DIR = os.path.join(sys._MEIPASS, "static")
-else:
-    APP_DIR = os.path.dirname(os.path.abspath(__file__))
-    TEMPLATE_DIR = "templates"
-    STATIC_DIR = "static"
-
-# Kullanıcı verisi (config.json, game_images) exe paketlenmişse AppData'da,
-# geliştirme sırasında proje klasöründe tutulur.
-if getattr(sys, "frozen", False):
-    appdata = os.getenv("APPDATA")
-    DATA_DIR = os.path.join(appdata, "MyGameList") if appdata else APP_DIR
-else:
-    DATA_DIR = APP_DIR
-
-os.makedirs(DATA_DIR, exist_ok=True)
-
-load_dotenv(os.path.join(APP_DIR, ".env"))
+TEMPLATE_DIR = str(ASSET_DIR / 'templates')
+STATIC_DIR = str(ASSET_DIR / 'static')
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
-app.secret_key = os.getenv("SECRET_KEY", "mygamelist-dev-secret")
+app.secret_key = secrets.token_hex(32)
+app.config.update(ANDROID_APP=os.environ.get('MYGAMELIST_PLATFORM') == 'android',
+                  SESSION_COOKIE_NAME='mygamelist_android' if os.environ.get('MYGAMELIST_PLATFORM') == 'android' else 'mygamelist', SESSION_COOKIE_HTTPONLY=True,
+                  SESSION_COOKIE_SAMESITE='Strict', MAX_CONTENT_LENGTH=65536,
+                  TRUSTED_HOSTS=['127.0.0.1','localhost','[::1]'])
+discovery = GameClient()
+
+
+@app.before_request
+def protect_local_library():
+    session.setdefault('csrf',secrets.token_hex(32))
+    if request.method == 'POST' and not secrets.compare_digest(
+            request.form.get('csrf','').encode(), session['csrf'].encode()):
+        abort(400, 'Your session changed. Reload the page and try again.')
+
+
+@app.after_request
+def private_response(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 init_db()
 GAME_IMAGES_DIR = os.path.join(DATA_DIR, "game_images")
 os.makedirs(GAME_IMAGES_DIR, exist_ok=True)
@@ -53,16 +59,30 @@ def download_game_image(game_id, image_url):
     İnternet yoksa ya da indirme başarısız olursa None döner (uygulama çökmez)."""
     if not image_url:
         return None
+    parts = urlsplit(image_url)
+    if parts.scheme != 'https' or parts.hostname != 'media.rawg.io' or parts.username or parts.password:
+        return None
     try:
-        response = requests.get(image_url, timeout=8)
-        if response.status_code != 200:
+        with urlopen(Request(image_url,headers={'User-Agent':'MyGameList/Android' if app.config['ANDROID_APP'] else 'MyGameList/Windows'}),timeout=8) as response:
+            if urlsplit(response.url).hostname != 'media.rawg.io':
+                return None
+            content_type = response.headers.get_content_type()
+            extension = {'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}.get(content_type)
+            if not extension:
+                return None
+            data = response.read(8*1024*1024+1)
+        if not data or len(data) > 8*1024*1024:
             return None
-        filename = f"{game_id}.jpg"
-        path = os.path.join(GAME_IMAGES_DIR, filename)
-        with open(path, "wb") as f:
-            f.write(response.content)
+        filename = f'{game_id}.{extension}'
+        path = Path(GAME_IMAGES_DIR) / filename
+        temporary = path.with_name(path.name + '.' + secrets.token_hex(6) + '.tmp')
+        try:
+            temporary.write_bytes(data)
+            temporary.replace(path)
+        finally:
+            temporary.unlink(missing_ok=True)
         return filename
-    except requests.exceptions.RequestException:
+    except (URLError,OSError,ValueError):
         return None
 
 
@@ -94,75 +114,9 @@ def get_game_details_with_fallback(game_id):
     return fallback, True
 
 
-CONFIG_PATH = os.path.join(DATA_DIR, "config.json")
-
-
-def load_api_key():
-    """Önce .env'e, o yoksa config.json'a (kurulum ekranından kaydedilen) bakar."""
-    env_key = os.getenv("RAWG_API_KEY")
-    if env_key:
-        return env_key
-
-    if os.path.exists(CONFIG_PATH):
-        try:
-            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-                return json.load(f).get("rawg_api_key")
-        except (json.JSONDecodeError, OSError):
-            return None
-
-    return None
-
-
-def save_api_key(key):
-    """Kurulum ekranında girilen key'i config.json'a kaydeder."""
-    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump({"rawg_api_key": key}, f)
-
-
-def test_api_key(key):
-    """Girilen key'in gerçekten çalışıp çalışmadığını RAWG'a küçük bir istekle kontrol eder."""
-    try:
-        response = requests.get(
-            f"{RAWG_BASE_URL}/games",
-            params={"key": key, "page_size": 1},
-            timeout=5
-        )
-        return response.status_code == 200
-    except requests.exceptions.RequestException:
-        return False
-
-
-RAWG_API_KEY = load_api_key()
-RAWG_BASE_URL = "https://api.rawg.io/api"
-
-
 @app.context_processor
 def inject_translation():
-    """Tüm template'lerde t(), aktif dili ve API key durumunu kullanılabilir yapar."""
-    return dict(t=t, current_lang=session.get("lang", "tr"), api_key_missing=not bool(RAWG_API_KEY))
-
-
-def search_games(query):
-    """RAWG API'de oyun arar, sonuçları bir liste olarak döner.
-    Hata olursa boş liste döner, uygulamayı çökertmez."""
-    url = f"{RAWG_BASE_URL}/games"
-    params = {
-        "key": RAWG_API_KEY,
-        "search": query,
-        "exclude_additions": "true",
-        "page_size": 10
-    }
-
-    try:
-        response = requests.get(url, params=params, timeout=5)
-    except requests.exceptions.RequestException:
-        return []
-
-    if response.status_code != 200:
-        return []
-
-    data = response.json()
-    return rank_game_results(data.get("results", []), query)
+    return dict(t=t, current_lang=session.get('lang','en'))
 
 
 def clean_description(text):
@@ -189,18 +143,12 @@ def clean_description(text):
 def get_game_details(game_id):
     """RAWG API'den tek bir oyunun detaylı bilgisini çeker.
     Hata olursa veya oyun bulunamazsa None döner."""
-    url = f"{RAWG_BASE_URL}/games/{game_id}"
-    params = {"key": RAWG_API_KEY}
-
+    if not 1 <= game_id <= 9999999999:
+        return None
     try:
-        response = requests.get(url, params=params, timeout=5)
-    except requests.exceptions.RequestException:
+        data = discovery.get(f'games/{game_id}')
+    except GameDiscoveryError:
         return None
-
-    if response.status_code != 200:
-        return None
-
-    data = response.json()
 
     if data.get("description_raw"):
         data["description_raw"] = clean_description(data["description_raw"])
@@ -276,25 +224,14 @@ def is_in_my_list(game_id):
 
 
 
-@app.route("/setup", methods=["GET", "POST"])
+@app.get('/setup')
 def setup():
-    """İlk çalıştırmada API key isteyen kurulum ekranı."""
-    global RAWG_API_KEY
-    error = None
+    return redirect(url_for('settings'))
 
-    if request.method == "POST":
-        key = request.form.get("api_key", "").strip()
 
-        if not key:
-            error = t("setup_error_empty")
-        elif not test_api_key(key):
-            error = t("setup_error_invalid")
-        else:
-            save_api_key(key)
-            RAWG_API_KEY = key
-            return redirect(url_for("index"))
-
-    return render_template("setup.html", error=error)
+@app.get('/settings')
+def settings():
+    return render_template('settings.html')
 
 
 @app.route("/set-language/<lang>")
@@ -302,7 +239,11 @@ def set_language(lang):
     """Kullanıcının dil tercihini session'a kaydeder, geldiği sayfaya geri döner."""
     if lang in ("tr", "en"):
         session["lang"] = lang
-    return redirect(request.referrer or url_for("index"))
+    referrer = request.referrer
+    parts = urlsplit(referrer or '')
+    if parts.netloc != request.host or parts.scheme not in ('http','https'):
+        referrer = url_for('index')
+    return redirect(referrer)
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -358,21 +299,12 @@ def quick_add_game(game_id):
 
 def rawg_search_page(resource, params):
     """Fetch a page without exposing the API key or upstream pagination URLs."""
-    if not RAWG_API_KEY:
-        return [], False, True
     try:
-        response = requests.get(
-            f"{RAWG_BASE_URL}/{resource}",
-            params={**params, "key": RAWG_API_KEY}, timeout=8,
-        )
-        response.raise_for_status()
-        data = response.json()
-        if not isinstance(data, dict) or not isinstance(data.get("results"), list):
-            return [], False, True
-        results = [item for item in data["results"]
-                   if isinstance(item, dict) and item.get("id") and item.get("name")]
-        return results, bool(data.get("next")), False
-    except (requests.exceptions.RequestException, ValueError):
+        data = discovery.get(resource, **params)
+        results = [item for item in data['results']
+                   if isinstance(item,dict) and isinstance(item.get('id'),int) and item['id'] > 0 and item.get('name')]
+        return results, bool(data.get('next')), False
+    except GameDiscoveryError:
         return [], False, True
 
 
@@ -494,11 +426,11 @@ def search_suggestions():
 
 @app.route("/search")
 def search():
-    query = request.args.get("q", "").strip()
+    query = request.args.get("q", "").strip()[:200]
     mode = request.args.get("type", "games")
     if mode not in ("games", "developers", "publishers"):
         mode = "games"
-    page = max(1, request.args.get("page", 1, type=int) or 1)
+    page = min(500, max(1, request.args.get("page", 1, type=int) or 1))
     company_id = request.args.get("company", type=int)
     company_name = request.args.get("company_name", "").strip()
     if mode == "games" or not company_id or company_id < 1:
@@ -568,7 +500,13 @@ def edit_game(game_id):
         favorite = 1 if request.form.get("favorite") == "on" else 0
 
         rating_raw = request.form.get("my_rating", "").strip()
-        my_rating = float(rating_raw) if rating_raw else None
+        try:
+            my_rating = float(rating_raw) if rating_raw else None
+        except ValueError:
+            abort(400, 'Invalid rating.')
+        if status not in ('Want to Play','Playing','Played','Dropped') or (
+                my_rating is not None and (not math.isfinite(my_rating) or not 0 <= my_rating <= 10)):
+            abort(400, 'Invalid journal values.')
 
         update_my_game(game_id, status, my_rating, note, favorite, played_date)
 
@@ -594,4 +532,5 @@ def page_not_found(e):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    from waitress import serve
+    serve(app,host='127.0.0.1',port=5000)

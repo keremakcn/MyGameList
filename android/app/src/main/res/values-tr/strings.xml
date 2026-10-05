@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="retry">Tekrar dene</string>
+    <string name="opening_library">Kütüphanen açılıyor…</string>
+    <string name="library_error">Kütüphanen açılamadı. Lütfen tekrar dene.</string>
+    <string name="screen_closed">Android ekranı kapattı. Kütüphaneni açmak için Tekrar dene düğmesine dokun.</string>
+    <string name="no_browser">Bu bağlantıyı açacak bir tarayıcı bulunamadı.</string>
+</resources>

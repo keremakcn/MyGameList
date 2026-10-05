@@ -1,24 +1,18 @@
 import sqlite3
 import os
-import sys
 import json
 import secrets
 import time
 
-if getattr(sys, "frozen", False):
-    appdata = os.getenv("APPDATA")
-    DATA_DIR = os.path.join(appdata, "MyGameList") if appdata else os.path.dirname(sys.executable)
-else:
-    DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+from paths import DATA_DIR
 
-os.makedirs(DATA_DIR, exist_ok=True)
 
 DB_NAME = os.path.join(DATA_DIR, "games.db")
 
 
 def get_connection():
     """Veritabanına bağlantı açar. Foreign key desteğini aktif eder."""
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, timeout=15)
     conn.execute("PRAGMA foreign_keys = ON")
     conn.row_factory = sqlite3.Row
     return conn
@@ -222,7 +216,7 @@ def get_my_game_by_id(game_id):
         SELECT
             games.id AS game_id,
             games.name,
-            games.cover_url,
+            games.cover_url, games.local_image_path,
             my_games.status,
             my_games.my_rating,
             my_games.note,

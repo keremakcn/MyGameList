@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="retry">Retry</string>
+    <string name="opening_library">Opening your library…</string>
+    <string name="library_error">Your library could not be opened. Please try again.</string>
+    <string name="screen_closed">The screen was closed by Android. Tap Retry to reopen your library.</string>
+    <string name="no_browser">No browser is available to open this link.</string>
+</resources>

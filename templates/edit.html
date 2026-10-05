@@ -9,7 +9,9 @@
     {% if game %}
         <div class="edit-card">
             <div class="edit-header">
-                {% if game.cover_url %}
+                {% if game.local_image_path %}
+                    <img src="{{ url_for('game_image', filename=game.local_image_path) }}" alt="{{ game.name }}">
+                {% elif game.cover_url %}
                     <img src="{{ game.cover_url }}" alt="{{ game.name }}">
                 {% else %}
                     <div class="no-image">—</div>
@@ -18,6 +20,7 @@
             </div>
 
             <form method="post" class="edit-form">
+<input type="hidden" name="csrf" value="{{ session.csrf }}">
 
                 <label for="status">{{ t('edit_status') }}</label>
                 <select name="status" id="status">

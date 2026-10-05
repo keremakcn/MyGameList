@@ -2,18 +2,27 @@
 
 **Your games, your ratings, your notes.**
 
-A personal game library for Windows, with fast discovery, local storage, and a dark interface in English and Turkish. Track what you want to play, what you are playing, and what you have finished—without creating a MyGameList account.
+A personal game library for Windows and Android, with fast discovery, local storage, and a dark interface in English and Turkish. Track what you want to play, what you are playing, and what you have finished—without creating an account or entering an API key.
 
-[**Download for Windows**](https://github.com/keremakcn/mygamelist/releases/latest) · [All releases](https://github.com/keremakcn/mygamelist/releases) · [Get a RAWG API key](https://rawg.io/apidocs)
+[**Download for Windows**](https://github.com/keremakcn/mygamelist/releases/latest) · [All releases](https://github.com/keremakcn/mygamelist/releases)
 
 ## Get started
 
 1. Download the **MyGameList ZIP** from the latest release's **Assets**. Choose the app archive, not the source-code archive.
 2. Extract it and open **`MyGameList.exe`**. No Python installation is needed.
-3. Open **Settings** and enter your own RAWG API key to search for games.
-4. Find a game and add it to your library. Use **Edit** to change its status, rating, notes, or favorite flag.
+3. Find a game and add it to your library. Use **Edit** to change its status, rating, notes, or favorite flag.
 
-The app opens without an API key; online discovery requires one. Your existing library remains available offline, including saved game details and covers that were downloaded successfully.
+Discovery is ready to use through our shared catalog service. No API key is required. Your existing library remains available offline, including saved game details and covers that were downloaded successfully.
+
+## Android beta
+
+The first Android build is **1.0.0-android-beta.1**. Install the signed **APK** when attached to a release. The **AAB** is the Play Console upload package and cannot be installed by tapping it.
+
+Android 7.0+ on 64-bit ARM devices is supported; x86_64 is included for compatible emulators. The phone layout includes two-column cards, touch controls, scrolling filters, and Turkish/English. Your selected language survives app restarts. Discovery uses the same key-free service as Windows.
+
+Phone and desktop libraries are separate. Android updates preserve your library; uninstalling or clearing app storage deletes it. Android backup, import/export and cloud sync are not implemented.
+
+**Release status:** signed packages and automated UI/application checks are available. Physical device testing is pending. Strict native RELRO checks flag third-party runtime libraries on 16 KB devices, so full 16 KB compatibility is not certified. Treat this as a beta testing package, not a verified production Play release. See [Android build notes](android/README.md), [Play submission notes](android/PLAY_STORE.md), and [QA results](QA_RESULTS.md).
 
 ## Screenshots
 
@@ -46,7 +55,7 @@ The library shows **newest additions first** by default. You can filter by statu
 
 ### Two kinds of search
 
-- **Discovery search** queries RAWG for games or companies. Games are selected by default; choose Developers or Publishers to browse those instead.
+- **Discovery search** uses our shared service to query RAWG for games or companies. Games are selected by default; choose Developers or Publishers to browse those instead.
 - **Library search** filters the games currently shown in your library, alongside your active status/favorites filter. It does not need an internet connection or an Enter key press.
 
 Discovery suggestions appear after **three characters** and a short typing pause, with up to **five results**. Use **↑ / ↓** to select, **Enter** to open a selection, or **Escape** to close the list. Pressing Enter without a selection opens the full results page.
@@ -72,91 +81,52 @@ After deleting a game, click **Undo** in the temporary notification to restore i
 |---|---|
 | Packaged Windows EXE | `%APPDATA%\MyGameList` (`AppData\Roaming`) |
 | Python source | The project directory |
+| Android | Private app storage: `files/library` (`games.db`, `game_images/`, `preferences.json`) |
 
-Both locations use the same file structure:
+The library and image cache use the same file structure on all platforms:
 
 ```text
 games.db       Library, notes, ratings, favorites, dates, and cached game details
-config.json    API key saved through Settings
 game_images/   Downloaded cover images
 ```
 
 **Do not delete `%APPDATA%\MyGameList` when updating.** Source and EXE runs use separate locations, so a library created in one does not automatically appear in the other.
 
-To back up your data, close the app and copy these files and the image folder to a safe location. To restore, close the app, keep a copy of the current data, and place the backup in the appropriate data directory. Backups can contain your API key; keep them private.
+To back up Windows/source data, close the app and copy these files and the image folder to a safe location. To restore, close the app, keep a copy of the current data, and place the backup in the appropriate data directory. Backups contain your private notes and library; keep them private.
 
 There is currently **no automatic backup, cloud sync, or account system**.
 
+## Your thoughts stay yours
+
+Your notes, ratings, favorites and playing history stay on your computer or phone. Searches and game-detail requests go through our shared discovery service to RAWG; your personal journal is not uploaded. Local storage is not encrypted.
+
 ## Run from source
 
-The following commands use **Windows PowerShell** and require **Python 3.10+** and Git. They call the virtual environment directly, so you do not need to activate it.
+Python 3.12 recommended. In Windows PowerShell:
 
 ```powershell
-git clone https://github.com/keremakcn/mygamelist.git
-cd mygamelist
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe app.py
-```
-
-Open **http://127.0.0.1:5000**. The database is initialized automatically. Configure your RAWG key through Settings, or copy `.env.example` to `.env` and set:
-
-```dotenv
-RAWG_API_KEY=your_key_here
-```
-
-To run the desktop window instead, stop the web version and run:
-
-```powershell
-.\.venv\Scripts\python.exe -m pip install pywebview
+.\.venv\Scripts\python.exe -m pip install -r requirements-desktop.txt
 .\.venv\Scripts\python.exe run_desktop.py
 ```
 
-The `RAWG_API_KEY` environment variable, including values loaded from `.env`, takes precedence over the key in `config.json`. In packaged runs, `.env` is read from beside the EXE; Settings saves to the AppData directory.
+For browser development, run `app.py` and open `http://127.0.0.1:5000`. The desktop window uses an available local port automatically, so it can run alongside MyMovieList and MySeriesList.
 
-## Build a Windows release
-
-After completing the source setup, close running copies of MyGameList and run:
-
-```powershell
-.\.venv\Scripts\python.exe -m pip install pywebview pyinstaller
-.\.venv\Scripts\python.exe -m PyInstaller --clean --noconfirm --onefile --windowed --name MyGameList --icon=icon.ico --add-data "templates;templates" --add-data "static;static" run_desktop.py
-```
-
-Alternatively, use the repository's packaging configuration:
+To build the Windows executable:
 
 ```powershell
 .\.venv\Scripts\python.exe -m PyInstaller --clean --noconfirm MyGameList.spec
 ```
 
-The result is **`dist/MyGameList.exe`**, with templates and static assets included. Test the generated EXE, then ZIP it for the release. Do not package personal `.env`, `config.json`, `games.db`, or `game_images/` files.
-
-## Project guide
-
-Built with **Python, Flask, SQLite, Jinja2, JavaScript, PyWebView, and PyInstaller**. Game metadata and cover images come from [RAWG](https://rawg.io/apidocs).
-
-| File or directory | Purpose |
-|---|---|
-| `app.py` | Routes, RAWG queries, search ranking, suggestions, and library actions |
-| `database.py` | Database initialization, library queries, and deletion/restore transactions |
-| `translations.py` | English and Turkish interface text |
-| `run_desktop.py` | Desktop window entry point |
-| `templates/` | Page templates and the shared `_discovery_search.html` form |
-| `static/style.css` | Theme and card layout |
-| `static/library-search.js` | Instant library filtering |
-| `static/search-suggestions.js` | Suggestions and keyboard navigation |
-| `static/library-actions.js` | Quick add, undo notifications, and note expansion |
-| `MyGameList.spec` | Executable packaging settings |
-| `.env.example` | Example API-key configuration |
-
-SQLite separates cached game metadata (`games`) from your personal entries (`my_games`). The `deleted_game_entries` table holds snapshots used by undo. Each user supplies their own RAWG API key; none is bundled with the release.
+The result is `dist/MyGameList.exe`. Only application assets are bundled; your database, covers and credentials are excluded.
 
 ## Troubleshooting
 
-- **Search is unavailable:** check your internet connection and RAWG key in Settings. If running from source, a key in `.env` overrides the one saved through Settings.
-- **The library looks empty after switching between source and EXE:** check the two data locations above. Switching launch methods does not migrate your library.
-- **Changes do not appear in the EXE:** rebuild it from the updated source. Editing Python, HTML, or CSS files does not update an already packaged executable.
-- **`python` is not recognized:** if the Windows Python launcher is installed, use `py` for the initial environment-creation command.
+- **Discovery is unavailable:** check your connection and try again shortly. The shared service may be temporarily busy. Your saved library remains available.
+- **The library looks empty after switching between source and EXE:** check the two storage locations above. Switching launch methods does not migrate your library.
+- **Changes do not appear in the EXE:** rebuild it from the updated source.
+
+For verification details, see [QA results](QA_RESULTS.md). Android build and installation details are in [android/README.md](android/README.md).
 
 ## License and credits
 

@@ -1,0 +1,37 @@
+param([switch]$Release, [string]$Python = '', [string]$Gradle = '.\gradlew.bat')
+$ErrorActionPreference = 'Stop'
+$root = Split-Path -Parent $PSScriptRoot
+if (!$Python) { $Python = Join-Path $root '.venv\Scripts\python.exe' }
+if ($Release -and !(Test-Path -LiteralPath (Join-Path $root 'android\keystore.properties'))) {
+    throw 'Release signing is not configured. Run scripts/create_android_signing.ps1 once, then back up the private signing files.'
+}
+if (!(Test-Path -LiteralPath $Python)) { throw 'Python was not found. Supply a Python 3.13 interpreter with -Python.' }
+$pythonVersion = & $Python -c 'import sys; print(str(sys.version_info.major) + "." + str(sys.version_info.minor))'
+if ($LASTEXITCODE -ne 0 -or $pythonVersion -ne '3.13') { throw 'Android builds require Python 3.13. Supply its interpreter with -Python.' }
+$previousPython = $env:CHAQUOPY_BUILD_PYTHON
+$env:CHAQUOPY_BUILD_PYTHON = $Python
+Push-Location -LiteralPath (Join-Path $root 'android')
+try {
+    if ($Release) { & $Gradle --no-daemon assembleRelease bundleRelease lintRelease }
+    else { & $Gradle --no-daemon assembleDebug lintDebug }
+    if ($LASTEXITCODE -ne 0) { throw 'Android build failed.' }
+    $versionSource = Get-Content -LiteralPath (Join-Path $root 'version.py') -Raw
+    if ($versionSource -notmatch 'APP_VERSION\s*=\s*"([^"]+)"') { throw 'Cannot read version.' }
+    $baseVersion = $Matches[1]
+    $version = "$baseVersion-android-beta.1"
+    $destination = Join-Path $root "dist\android\$version"
+    New-Item -ItemType Directory -Path $destination -Force | Out-Null
+    if ($Release) {
+        Copy-Item -LiteralPath app/build/outputs/apk/release/app-release.apk -Destination (Join-Path $destination "MyGameList-$version.apk") -Force
+        Copy-Item -LiteralPath app/build/outputs/bundle/release/app-release.aab -Destination (Join-Path $destination "MyGameList-$version.aab") -Force
+    } else {
+        Copy-Item -LiteralPath app/build/outputs/apk/debug/app-debug.apk -Destination (Join-Path $destination "MyGameList-$version-debug.apk") -Force
+    }
+    Get-ChildItem -LiteralPath $destination -File | Where-Object { $_.Extension -in '.apk', '.aab' } | ForEach-Object {
+        '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
+    } | Set-Content -LiteralPath (Join-Path $destination 'SHA256SUMS.txt') -Encoding ascii
+    Write-Output "Android output: $destination"
+} finally {
+    Pop-Location
+    $env:CHAQUOPY_BUILD_PYTHON = $previousPython
+}

@@ -98,6 +98,7 @@
                         <h2 class="section-heading" style="margin-top: 0;">{{ t('detail_library_heading') }}</h2>
 
                         <form method="post" action="{{ url_for('edit_game', game_id=game.id) }}" class="edit-form" style="max-width: 420px;">
+<input type="hidden" name="csrf" value="{{ session.csrf }}">
 
                             <label for="status">{{ t('edit_status') }}</label>
                             <select name="status" id="status">
@@ -129,11 +130,13 @@
                         </form>
 
                         <form method="post" action="{{ url_for('index') }}" class="delete-form" data-game-name="{{ game.name }}" style="margin-top: 14px;">
+<input type="hidden" name="csrf" value="{{ session.csrf }}">
                             <input type="hidden" name="delete_game_id" value="{{ game.id }}">
                             <button type="submit" class="btn-danger">{{ t('card_delete') }}</button>
                         </form>
                     {% else %}
                         <form method="post">
+<input type="hidden" name="csrf" value="{{ session.csrf }}">
                             <button type="submit" class="btn-primary">{{ t('detail_add_library') }}</button>
                         </form>
                     {% endif %}

@@ -2,16 +2,19 @@
 <html lang="{{ current_lang }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{% block title %}MyGameList{% endblock %}</title>
 
+    <meta name="theme-color" content="#0F1117">
+    {% if not config.get("ANDROID_APP") %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
+    {% endif %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body{% if config.get("ANDROID_APP") %} class="android-app"{% endif %}>
 
     <header class="navbar">
         <a href="{{ url_for('index') }}" class="navbar-brand">
@@ -27,7 +30,7 @@
         </a>
         <nav class="navbar-links">
             <a href="{{ url_for('index') }}">{{ t('nav_home') }}</a>
-            <a href="{{ url_for('setup') }}">{{ t('nav_settings') }}</a>
+            <a href="{{ url_for('settings') }}">{{ t('nav_settings') }}</a>
             <div class="lang-toggle">
                 <a href="{{ url_for('set_language', lang='tr') }}" class="lang-option {% if current_lang == 'tr' %}lang-active{% endif %}">TR</a>
                 <a href="{{ url_for('set_language', lang='en') }}" class="lang-option {% if current_lang == 'en' %}lang-active{% endif %}">EN</a>
@@ -39,12 +42,14 @@
         {% block content %}{% endblock %}
     </main>
 
+    <footer class="catalog-credit">Game data and images: <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">RAWG</a></footer>
     <div class="toast-stack" aria-live="polite">
         {% for category, message in get_flashed_messages(with_categories=true) %}
             <div class="action-toast">
                 {% if category == 'undo' %}
                     <span>{{ t('deleted_notice') }}</span>
                     <form method="post" action="{{ url_for('restore_library_game') }}">
+<input type="hidden" name="csrf" value="{{ session.csrf }}">
                         <input type="hidden" name="token" value="{{ message.token }}">
                         <input type="hidden" name="filter" value="{{ current_filter|default('all') }}">
                         <input type="hidden" name="sort" value="{{ current_sort|default('recent') }}">

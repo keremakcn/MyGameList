@@ -18,3 +18,22 @@ __pycache__/
 # Derleme çıktıları
 build/
 dist/
+# QA caches and private backups
+.qa/
+.pytest_cache/
+*.db
+*.db-*
+*.bak
+
+# Android build and private signing files
+.gradle/
+.kotlin/
+.android-signing/
+android/local.properties
+android/keystore.properties
+*.jks
+*.keystore
+*.apk
+*.aab
+preferences.json
+preferences.tmp

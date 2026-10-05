@@ -4,14 +4,7 @@
 
 {% block content %}
 
-    {% if api_key_missing %}
-        <div class="token-banner">
-            <span>{{ t('banner_no_key') }}</span>
-            <a href="{{ url_for('setup') }}">{{ t('banner_add_key') }}</a>
-        </div>
-    {% endif %}
 
-    <span class="hero-eyebrow">{{ t('search_title') }}</span>
 
     <section class="hero">
         <div class="hero-decoration" aria-hidden="true">
@@ -63,7 +56,7 @@
         <a href="{{ url_for('index', filter='favorites', sort=current_sort) }}" class="pill {% if current_filter == 'favorites' %}pill-active{% endif %}">{{ t('filter_favorites') }}</a>
     </div>
 
-    <div class="filter-bar">
+    <div class="filter-bar sort-bar">
         <a href="{{ url_for('index', filter=current_filter, sort='name_asc') }}" class="pill {% if current_sort == 'name_asc' %}pill-active{% endif %}">{{ t('sort_name_asc') }}</a>
         <a href="{{ url_for('index', filter=current_filter, sort='name_desc') }}" class="pill {% if current_sort == 'name_desc' %}pill-active{% endif %}">{{ t('sort_name_desc') }}</a>
         <a href="{{ url_for('index', filter=current_filter, sort='metacritic_desc') }}" class="pill {% if current_sort == 'metacritic_desc' %}pill-active{% endif %}">{{ t('sort_mc_desc') }}</a>
@@ -134,6 +127,7 @@
 
                         {% if game.status != "Played" %}
                             <form method="post" action="{{ url_for('quick_status', game_id=game.game_id) }}">
+<input type="hidden" name="csrf" value="{{ session.csrf }}">
                                 <input type="hidden" name="status" value="Played">
                                 <input type="hidden" name="filter" value="{{ current_filter }}">
                                 <input type="hidden" name="sort" value="{{ current_sort }}">
@@ -142,6 +136,7 @@
                         {% endif %}
 
                         <form method="post" class="delete-form" data-game-name="{{ game.name }}">
+<input type="hidden" name="csrf" value="{{ session.csrf }}">
                             <input type="hidden" name="delete_game_id" value="{{ game.game_id }}">
                             <button type="submit" class="btn-icon btn-icon-danger" title="{{ t('card_delete') }}">✕</button>
                         </form>

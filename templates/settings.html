@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block title %}{{ t('nav_settings') }} · MyGameList{% endblock %}
+{% block content %}
+<section class="edit-card" style="max-width:640px;margin:40px auto">
+  <h1>{{ 'Keşfetmeye hazırsın' if current_lang=='tr' else 'Ready to explore' }}</h1>
+  <p>{{ 'Oyunları, geliştiricileri ve yayıncıları ara. Hesap açman veya API anahtarı girmen gerekmiyor.' if current_lang=='tr' else 'Discover games, developers and publishers. No account or API key required.' }}</p>
+  <p style="color:var(--text-muted)">{{ 'Notların, puanların ve favorilerin bu cihazda tutulur. İnternet yokken kayıtlı kütüphaneni kullanabilirsin; keşif için internet gerekir.' if current_lang=='tr' else 'Your notes, ratings and favorites stay on this device. Your saved library is available offline; discovery needs an internet connection.' }}</p>
+  <a class="btn-primary" href="{{ url_for('search') }}">{{ 'Oyun keşfet →' if current_lang=='tr' else 'Discover games →' }}</a>
+  <p style="color:var(--text-muted);margin-top:24px">{{ 'Dilini üst menüdeki TR / EN seçeneklerinden değiştirebilirsin.' if current_lang=='tr' else 'Change language using TR / EN in the top menu.' }}</p>
+  {% if config.get('ANDROID_APP') %}
+  <p class="android-storage-note">{{ 'Android güncellemeleri kütüphaneni korur. Uygulamayı kaldırmak veya uygulama verilerini temizlemek kayıtlarını siler. Telefon ve bilgisayar kütüphaneleri otomatik eşitlenmez.' if current_lang=='tr' else 'Android updates keep your library. Uninstalling or clearing app storage deletes your saved data. Phone and computer libraries do not sync automatically.' }}</p>
+  {% endif %}
+</section>
+{% endblock %}
