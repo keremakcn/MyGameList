@@ -35,3 +35,13 @@ RAWG free-plan usage is shared across users. Cache and per-location rate limits 
 - No physical Android/emulator installation was performed. Back gestures, keyboard/IME, lifecycle recovery, actual HTTPS transport in the Android runtime and update-without-data-loss need on-device testing. No Play Console or GitHub upload was performed.
 
 For mobile browser checks, start `python tests/preview.py` with `MYGAMELIST_PLATFORM=android`, then run `node tests/mobile.cjs` with the same Playwright environment variables used for desktop checks. These checks emulate phone screens; they do not replace native device testing.
+
+
+## Purple G branding update — 2026-10-05
+
+- The approved purple G/controller artwork is used in the README, navbar, favicon, Windows EXE resources, native window icon and Android launcher. Artwork was resized/converted without redesigning it. The ICO contains 16, 20, 24, 32, 40, 48, 64, 128 and 256px sizes. Small Windows icons and representative circular/rounded Android mask previews were visually inspected.
+- 17 isolated Python tests passed. 132 bilingual mobile/tablet page checks and 30 desktop page checks plus their interaction flows passed after branding changes. Desktop and phone Settings screenshots were visually inspected; no horizontal overflow or JavaScript exceptions were detected.
+- Windows EXE rebuilt and launched with a separate temporary library. Library and Settings returned the new navbar/logo; packaged favicon bytes matched the approved ICO. All nine icon payloads in the executable's PE resources matched the source ICO. Only the test-owned application processes were stopped. Personal libraries were not opened or modified.
+- Signed APK/AAB rebuilt as 1.0.0-android-beta.2, versionCode 2. Application ID and original signing certificate remain unchanged. APK v2 signing, AAB signing/structure, ZIP alignment, AAB page-alignment configuration and update metadata checks passed. Android Lint completed with zero errors and two launcher-icon warnings.
+- Recursive package checks confirmed the approved Android launcher and shared branding files are included. Personal databases, covers, configuration, provider credentials and signing keys are excluded. Windows ZIP contains only the EXE and INSTALL.txt; ZIP integrity, EXE equality and release SHA-256 checksums passed.
+- Known Android limit remains: 98, 98 third-party native libraries flagged by the strict RELRO-end inspection in APK/AAB respectively; all PT_LOAD checks passed. No physical-device installation or update test was performed, and full 16 KB compatibility is not certified. Android remains Beta. No GitHub or Play upload was performed.

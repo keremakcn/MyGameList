@@ -6,6 +6,9 @@
     <title>{% block title %}MyGameList{% endblock %}</title>
 
     <meta name="theme-color" content="#0F1117">
+    <link rel="icon" href="{{ url_for('static', filename='branding/mygamelist.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='branding/favicon-32.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='branding/apple-touch-icon.png') }}">
     {% if not config.get("ANDROID_APP") %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,14 +21,7 @@
 
     <header class="navbar">
         <a href="{{ url_for('index') }}" class="navbar-brand">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="8" width="24" height="14" rx="4" fill="var(--accent)"/>
-                <circle cx="9" cy="15" r="2.2" fill="var(--bg)"/>
-                <circle cx="19" cy="13" r="1.6" fill="var(--bg)"/>
-                <circle cx="19.5" cy="17.5" r="1.6" fill="var(--bg)"/>
-                <rect x="7.2" y="12.8" width="3.6" height="1.4" fill="var(--accent)"/>
-                <rect x="8.3" y="11.7" width="1.4" height="3.6" fill="var(--accent)"/>
-            </svg>
+            <img class="brand-logo" src="{{ url_for('static', filename='branding/mygamelist-navbar.png') }}" width="44" height="44" alt="">
             <span>MYGAMELIST</span>
         </a>
         <nav class="navbar-links">

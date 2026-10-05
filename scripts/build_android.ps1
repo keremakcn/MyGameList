@@ -18,7 +18,9 @@ try {
     $versionSource = Get-Content -LiteralPath (Join-Path $root 'version.py') -Raw
     if ($versionSource -notmatch 'APP_VERSION\s*=\s*"([^"]+)"') { throw 'Cannot read version.' }
     $baseVersion = $Matches[1]
-    $version = "$baseVersion-android-beta.1"
+    if ($versionSource -notmatch 'ANDROID_BETA\s*=\s*(\d+)') { throw 'Cannot read Android beta version.' }
+    $androidBeta = $Matches[1]
+    $version = "$baseVersion-android-beta.$androidBeta"
     $destination = Join-Path $root "dist\android\$version"
     New-Item -ItemType Directory -Path $destination -Force | Out-Null
     if ($Release) {

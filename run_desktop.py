@@ -3,6 +3,7 @@ import threading
 import webview
 from waitress import create_server
 from app import app
+from paths import ASSET_DIR
 
 if __name__ == '__main__':
     webview.settings['OPEN_EXTERNAL_LINKS_IN_BROWSER'] = True
@@ -12,6 +13,6 @@ if __name__ == '__main__':
     try:
         webview.create_window('MyGameList',f'http://127.0.0.1:{server.effective_port}',
                               width=1100,height=750,min_size=(700,500),background_color='#101014')
-        webview.start()
+        webview.start(icon=str(ASSET_DIR / 'static' / 'branding' / 'mygamelist.ico'))
     finally:
         server.close()

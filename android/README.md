@@ -4,7 +4,7 @@ The Android shell runs the shared Flask application and SQLite library entirely 
 
 ## Install
 
-Install `MyGameList-1.0.0-android-beta.1.apk` when it is attached to a GitHub release. Android 7.0+ is required; supported ABIs are arm64-v8a and x86_64. There is no desktop-to-phone sync. The AAB is for Google Play submission, not direct installation.
+Install `MyGameList-1.0.0-android-beta.2.apk` when it is attached to a GitHub release. Android 7.0+ is required; supported ABIs are arm64-v8a and x86_64. There is no desktop-to-phone sync. The AAB is for Google Play submission, not direct installation.
 
 ## Build
 
@@ -17,7 +17,7 @@ python -m venv .venv
 .\scripts\build_android.ps1 -Release
 ```
 
-Release output goes to `dist/android/1.0.0-android-beta.1/`, with APK, AAB and SHA-256 checksums. Increase Android `versionCode` for each published update. Keep the original application ID and signing key when issuing updates.
+Release output goes to `dist/android/1.0.0-android-beta.2/`, with APK, AAB and SHA-256 checksums. Increase `ANDROID_VERSION_CODE` and `ANDROID_BETA` in `version.py` for each published beta update; Gradle and the packaging script use the same values. Keep the original application ID and signing key when issuing updates.
 
 **Back up `.android-signing/release.jks` and `android/keystore.properties` together in a secure location.** They are private, ignored by Git, and must never be included in releases. Losing the signing key prevents updates to existing installations. The manual GitHub Actions workflow also supports debug builds and signed release builds after configuring its four Android signing secrets.
 
@@ -32,10 +32,10 @@ Release output goes to `dist/android/1.0.0-android-beta.1/`, with APK, AAB and S
 
 ## Play Console
 
-The signed AAB uses application ID `com.mygamelist`, version code `1`, target SDK `36`. Read [PLAY_STORE.md](PLAY_STORE.md) before uploading. No Play Console upload or public publication has been performed.
+The signed AAB uses application ID `com.mygamelist`, version code `2`, target SDK `36`. Read [PLAY_STORE.md](PLAY_STORE.md) before uploading. No Play Console upload or public publication has been performed.
 
 ## Validation limits
 
 Automated shared-app, native-session, responsive UI, signing and package checks are run before release. Physical Android device testing is still required for keyboard behavior, Back navigation, lifecycle recovery and device-specific WebView behavior. Publish as Android Beta until those checks are completed.
 
-All native PT_LOAD segments are at least 16 KB aligned; APK ZIP alignment and AAB PAGE_ALIGNMENT_16K pass. The stricter RELRO-end check flags third-party Chaquopy/Python libraries. This is unresolved; alignment alone does not prove runtime compatibility. Test on real 4 KB and 16 KB devices and resolve the native-runtime findings before treating this as a production release. The first build remains Beta.
+All native PT_LOAD segments are at least 16 KB aligned; APK ZIP alignment and AAB PAGE_ALIGNMENT_16K pass. The stricter RELRO-end check flags third-party Chaquopy/Python libraries. This is unresolved; alignment alone does not prove runtime compatibility. Test on real 4 KB and 16 KB devices and resolve the native-runtime findings before treating this as a production release. This build remains Beta.

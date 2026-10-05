@@ -1,13 +1,13 @@
 # MyGameList — Play submission preparation
 
-The signed `MyGameList-1.0.0-android-beta.1.aab` is a Play Console upload artifact, not an installable download. The APK is for direct installation. No store submission has been made.
+The signed `MyGameList-1.0.0-android-beta.2.aab` is a Play Console upload artifact, not an installable download. The APK is for direct installation. No store submission has been made.
 
 | Field | Build value |
 |---|---|
 | Name | MyGameList |
 | Application ID | `com.mygamelist` |
-| Version code | 1 |
-| Version name | 1.0.0-android-beta.1 |
+| Version code | 2 |
+| Version name | 1.0.0-android-beta.2 |
 | Target / minimum Android SDK | 36 / 24 |
 | ABIs | arm64-v8a, x86_64 |
 | Signing certificate SHA-256 | `301ac031541c03c40676dd4da34ed6320afe8be29780d1e35b550c26ae7193a5` |
@@ -23,7 +23,7 @@ Test installation, device keyboard, Back gestures, orientation, background/resum
 1. Create the MyGameList application in your own Play Console account. Ensure this application ID is available and intended to remain permanent.
 2. Configure Play App Signing and keep the local signing key backed up. Play signing and your GitHub APK signing can affect whether one distribution can update the other; confirm the signing arrangement before release.
 3. Upload the AAB to Internal testing, review the generated APK/device checks, and complete any account-specific testing requirements.
-4. Add the store description, app icon, feature graphic and genuine Android screenshots. Browser QA images are not evidence of a device installation.
+4. Add the store description, app icon, feature graphic and genuine Android screenshots. The approved 512 × 512 purple G store icon is `static/branding/mygamelist-logo.png`. Browser QA images are not evidence of a device installation.
 5. Complete App content, content rating, ads declaration, app access, target audience, Data safety, and a publicly accessible privacy policy. There are no in-app ads, user accounts or login credentials in this build.
 
 See Google's [review preparation](https://support.google.com/googleplay/android-developer/answer/9859455?hl=en) and [Data safety instructions](https://support.google.com/googleplay/android-developer/answer/10787469?hl=en).
@@ -40,4 +40,4 @@ Do not automatically select “no data collected” just because notes are store
 
 ## Updates
 
-Increment versionCode on every Play upload. Keep the same application ID and appropriate signing key. Never attach `.android-signing/release.jks` or `android/keystore.properties` to a release or commit them to Git.
+Increment `ANDROID_VERSION_CODE` in `version.py` on every Play upload. Keep the same application ID and appropriate signing key. Never attach `.android-signing/release.jks` or `android/keystore.properties` to a release or commit them to Git.

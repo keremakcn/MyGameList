@@ -1,10 +1,14 @@
-# 🎮 MyGameList
+<p align="center">
+  <img src="static/branding/mygamelist-logo.png" width="144" height="144" alt="MyGameList purple G logo">
+</p>
+
+# MyGameList
 
 **Your games, your ratings, your notes.**
 
 A personal game library for Windows and Android, with fast discovery, local storage, and a dark interface in English and Turkish. Track what you want to play, what you are playing, and what you have finished—without creating an account or entering an API key.
 
-[**Download for Windows**](https://github.com/keremakcn/mygamelist/releases/latest) · [All releases](https://github.com/keremakcn/mygamelist/releases)
+[**Download for Windows**](https://github.com/keremakcn/mygamelist/releases/latest) · [**Android beta APK**](https://github.com/keremakcn/mygamelist/releases/latest) · [All releases](https://github.com/keremakcn/mygamelist/releases)
 
 ## Get started
 
@@ -16,7 +20,7 @@ Discovery is ready to use through our shared catalog service. No API key is requ
 
 ## Android beta
 
-The first Android build is **1.0.0-android-beta.1**. Install the signed **APK** when attached to a release. The **AAB** is the Play Console upload package and cannot be installed by tapping it.
+The current Android build is **1.0.0-android-beta.2**, with the new purple G logo across Windows, Android, and the app interface. Install the signed **APK** when attached to a release. The **AAB** is the Play Console upload package and cannot be installed by tapping it.
 
 Android 7.0+ on 64-bit ARM devices is supported; x86_64 is included for compatible emulators. The phone layout includes two-column cards, touch controls, scrolling filters, and Turkish/English. Your selected language survives app restarts. Discovery uses the same key-free service as Windows.
 

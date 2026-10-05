@@ -79,6 +79,15 @@ a { color: inherit; }
     color: var(--text);
 }
 
+.brand-logo {
+    display: block;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 10px;
+    object-fit: contain;
+}
+
 .navbar-links a {
     color: var(--text-muted);
     text-decoration: none;
